@@ -1,12 +1,12 @@
-import sys, os, urllib.request
+import sys, os
 import ee
+from comun import municipio, dw, dw_areas, base, dibujar, leyenda_base, guardar, descargar, leer, pct
 
 AÑOS = [2000, 2005, 2010, 2015, 2020]
 UMBRAL = 0.20               # fracción construida de la celda para contar como mancha
 SENSIBILIDAD = [0.10, 0.30]
 POBLACION = (86840, 115107)  # INEGI 2000, 2020
-MUNICIPIO = ("Hidalgo", "Tula De Allende")  # FAO/GAUL/2025/level2 (la versión 2015 da 491 km²)
-CRS = "EPSG:32614"
+DW_RECIENTE = (2020, 2026)   # Dynamic World: construido nuevo después del último año GHSL
 
 
 def mancha(a, u):
@@ -14,82 +14,76 @@ def mancha(a, u):
     return b.gte(b.projection().nominalScale().pow(2).multiply(u))
 
 
-def main(gpkg, capa, out, proyecto):
-    import geopandas as gpd, pandas as pd, rasterio
+def main(magoni, out, proyecto):
+    import pandas as pd
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap
     from matplotlib.patches import Patch
-    from matplotlib.lines import Line2D
 
     os.makedirs(out, exist_ok=True)
     ee.Initialize(project=proyecto)
-    mun = (ee.FeatureCollection("FAO/GAUL/2025/level2")
-           .filter(ee.Filter.eq("GAUL1_NAME", MUNICIPIO[0])).filter(ee.Filter.eq("GAUL2_NAME", MUNICIPIO[1])))
+    mun = municipio()
     geom = mun.geometry()
     proj = ee.Image("JRC/GHSL/P2023A/GHS_BUILT_S/2000").projection()
     km2 = geom.area(1).divide(1e6).getInfo()
 
-    def suma(img):
-        return img.multiply(ee.Image.pixelArea()).reduceRegion(ee.Reducer.sum(), geom, crs=proj, maxPixels=1e9)
+    def suma(img, banda="built_surface"):
+        return img.multiply(ee.Image.pixelArea()).reduceRegion(ee.Reducer.sum(), geom, crs=proj, maxPixels=1e9).getNumber(banda)
 
     filas = []
     for a in AÑOS:
-        b = ee.Image(f"JRC/GHSL/P2023A/GHS_BUILT_S/{a}").select("built_surface")
-        r = {"año": a,
-             "construida_ha": b.reduceRegion(ee.Reducer.sum(), geom, crs=proj, maxPixels=1e9).getNumber("built_surface")}
+        b = ee.Image(f"JRC/GHSL/P2023A/GHS_BUILT_S/{a}")
+        s = b.reduceRegion(ee.Reducer.sum(), geom, crs=proj, maxPixels=1e9)
+        r = {"año": a, "construida_ha": s.getNumber("built_surface"), "no_residencial_ha": s.getNumber("built_surface_nres")}
         for u in [UMBRAL] + SENSIBILIDAD:
-            r[f"mancha_{u:.0%}"] = suma(mancha(a, u)).getNumber("built_surface")
+            r[f"mancha_{u:.0%}"] = suma(mancha(a, u))
         filas.append({k: (v if k == "año" else v.getInfo() / 1e4) for k, v in r.items()})
     t = pd.DataFrame(filas)
-    t[["año", "construida_ha", f"mancha_{UMBRAL:.0%}"]].round(1).rename(
+    t[["año", "construida_ha", "no_residencial_ha", f"mancha_{UMBRAL:.0%}"]].round(1).rename(
         columns={f"mancha_{UMBRAL:.0%}": "mancha_urbana_ha"}).to_csv(f"{out}/mancha_urbana.csv", index=False)
 
+    c0, c1 = (dw_areas(a, geom).get("construido", 0) for a in DW_RECIENTE)
     i, f = t.iloc[0], t.iloc[-1]
-    pct = lambda c: (f[c] / i[c] - 1) * 100
-    print(f"Municipio: {km2:.1f} km² (INEGI ~305 km²)")
+    cambio = lambda c: pct(i[c], f[c])
+    print(f"Municipio: {km2:.1f} km² (INEGI: 1.62% de Hidalgo ≈ 338 km²)".encode("ascii", "replace").decode())
     print(t.round(1).to_string(index=False))
-    print(f"\n{AÑOS[0]}–{AÑOS[-1]}")
-    print(f"  Población (INEGI)          {(POBLACION[1] / POBLACION[0] - 1) * 100:+.1f}%")
-    print(f"  Superficie construida      {pct('construida_ha'):+.1f}%")
+    print(f"\n{AÑOS[0]}-{AÑOS[-1]}")
+    print(f"  Población (INEGI)          {pct(*POBLACION):+.1f}%")
+    print(f"  Superficie construida      {cambio('construida_ha'):+.1f}%")
+    print(f"  No residencial (GHSL)      {f.no_residencial_ha / f.construida_ha:.0%} del total en {AÑOS[-1]}")
     for u in [UMBRAL] + SENSIBILIDAD:
-        print(f"  Mancha urbana (>= {u:.0%})    {pct(f'mancha_{u:.0%}'):+.1f}%")
+        print(f"  Mancha urbana (>= {u:.0%})    {cambio(f'mancha_{u:.0%}'):+.1f}%")
+    print(f"\n{DW_RECIENTE[0]}-{DW_RECIENTE[1]} (Dynamic World, indicativo)")
+    print(f"  Construido                 {c0:,.0f} -> {c1:,.0f} ha ({pct(c0, c1):+.1f}%)")
 
+    b = base(mun, out, magoni)
     m0, m1 = mancha(AÑOS[0], UMBRAL), mancha(AÑOS[-1], UMBRAL)
-    clase = m0.where(m1.And(m0.Not()), 2).rename("clase").toByte().clip(geom)
-    region = geom.bounds(1).buffer(500, 10)
-    url = clase.getDownloadURL({"region": region, "crs": CRS, "scale": 100, "format": "GEO_TIFF"})
-    tif = f"{out}/mancha_urbana.tif"
-    urllib.request.urlretrieve(url, tif)
-    with rasterio.open(tif) as r:
-        z, b = r.read(1), r.bounds
-    os.remove(tif)
-    lim = gpd.GeoDataFrame.from_features(mun.getInfo()["features"], crs="EPSG:4326").to_crs(CRS)
-    bordos = gpd.read_file(gpkg, layer=capa).to_crs(CRS)
+    clase = m0.where(m1.And(m0.Not()), 2).selfMask().rename("clase").toByte().clip(geom)
+    descargar(clase, b["region"], 100, f"{out}/_ghsl.tif")
+    nuevo = (dw((DW_RECIENTE[1] - 1, DW_RECIENTE[1]), geom).eq(6)
+             .And(dw((DW_RECIENTE[0] - 1, DW_RECIENTE[0]), geom).neq(6))
+             .And(m1.reproject(proj).Not()).selfMask().toByte().clip(geom))
+    descargar(nuevo, b["region"], 20, f"{out}/_dw.tif")
+    (zg, eg), (zd, ed) = leer(f"{out}/_ghsl.tif"), leer(f"{out}/_dw.tif")
 
-    c0, c1 = "#9a9a9a", "#e0590c"
-    fig, ax = plt.subplots(figsize=(8, 9))
-    ax.imshow(z, cmap=ListedColormap(["none", c0, c1]), vmin=0, vmax=2, interpolation="nearest",
-              extent=[b.left, b.right, b.bottom, b.top])
-    lim.boundary.plot(ax=ax, color="k", lw=0.8)
-    bordos.plot(ax=ax, color="#1d74c9", lw=2)
-    ax.annotate("Tres Culturas", bordos.union_all().centroid.coords[0], xytext=(8, -4),
-                textcoords="offset points", fontsize=9, color="#1d74c9")
-    ax.legend(handles=[Patch(color=c0, label=f"Mancha urbana {AÑOS[0]}"),
-                       Patch(color=c1, label=f"Crecimiento a {AÑOS[-1]}"),
-                       Line2D([0], [0], color="k", lw=0.8, label="Límite municipal"),
-                       Line2D([0], [0], color="#1d74c9", lw=2, label="Bordos Tres Culturas")],
-              loc="lower left", fontsize=9, frameon=False)
-    x0, y0, x1, y1 = lim.total_bounds
-    ax.set_xlim(x0 - 300, x1 + 300); ax.set_ylim(y0 - 300, y1 + 300)
-    ax.set_axis_off()
-    ax.set_title(f"Tula de Allende · mancha urbana {AÑOS[0]}–{AÑOS[-1]} "
-                 f"({pct(f'mancha_{UMBRAL:.0%}'):+.0f}%)\nGHSL, celdas de 100 m con ≥ {UMBRAL:.0%} construido",
-                 fontsize=11)
-    fig.tight_layout()
-    fig.savefig(f"{out}/mancha_urbana_2000_2020.png", dpi=150)
+    col = {"2000": "#8c8c8c", "2020": "#f28e2b", "2026": "#c0392b"}
+    fig, ax = plt.subplots(figsize=(9, 10.5))
+    dibujar(ax, b, "Tula de Allende: crecimiento de la mancha urbana",
+            f"Mancha {AÑOS[0]}–{AÑOS[-1]}: {cambio(f'mancha_{UMBRAL:.0%}'):+.0f}% (GHSL) · población {pct(*POBLACION):+.0f}% (INEGI)")
+    ax.imshow(zg, cmap=ListedColormap(["none", col["2000"], col["2020"]]), vmin=0, vmax=2, extent=eg,
+              interpolation="nearest", zorder=2)
+    ax.imshow(zd, cmap=ListedColormap(["none", col["2026"]]), vmin=0, vmax=1, extent=ed, interpolation="nearest", zorder=3)
+    ax.legend(handles=[Patch(color=col["2000"], label=f"Mancha urbana {AÑOS[0]}"),
+                       Patch(color=col["2020"], label=f"Crecimiento {AÑOS[0]}–{AÑOS[-1]}"),
+                       Patch(color=col["2026"], label=f"Construido nuevo {DW_RECIENTE[0]}–{DW_RECIENTE[1]}*")] + leyenda_base(),
+              loc="lower left", fontsize=8.5, frameon=True, framealpha=0.95, edgecolor="none")
+    guardar(fig, ax, f"{out}/mancha_urbana_2000_2026.png",
+            f"Mancha urbana: GHSL (JRC), celdas de 100 m con ≥ {UMBRAL:.0%} construido. "
+            f"*{DW_RECIENTE[0]}–{DW_RECIENTE[1]}: Dynamic World (10 m), indicativo.\n"
+            "Límite: FAO GAUL 2025. Áreas protegidas: WDPA. Relieve: NASADEM.")
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:5])
+    main(*sys.argv[1:4])
