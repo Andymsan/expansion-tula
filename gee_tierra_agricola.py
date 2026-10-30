@@ -1,6 +1,6 @@
 import sys, os
 import ee
-from comun import municipio, dw, dw_areas, base, dibujar, leyenda_base, guardar, descargar, leer, pct, INICIO, FIN
+from comun import CRS, municipio, dw, dw_areas, base, dibujar, leyenda_base, guardar, descargar, leer, pct, INICIO, FIN
 
 AÑOS = range(2016, 2027)
 CULTIVOS, CONSTRUIDO = 4, 6
@@ -29,7 +29,7 @@ def main(magoni, out, proyecto):
     cambio = (ee.Image(0).where(c0.And(c1), 1).where(c0.Not().And(c1), 2)
               .where(c0.And(b.eq(CONSTRUIDO)), 3).where(c0.And(c1.Not()).And(b.neq(CONSTRUIDO)), 4)
               .selfMask().toByte().rename("c").clip(geom))
-    h = cambio.reduceRegion(ee.Reducer.frequencyHistogram(), geom, 10, maxPixels=1e10).getInfo()["c"]
+    h = cambio.reduceRegion(ee.Reducer.frequencyHistogram(), geom, 10, crs=CRS, maxPixels=1e10).getInfo()["c"]
     ha = {CLASES[int(k)][0]: v * 0.01 for k, v in h.items()}
     pd.Series(ha, name="ha").round(1).rename_axis("cambio").to_csv(f"{out}/tierra_agricola_cambio.csv")
 

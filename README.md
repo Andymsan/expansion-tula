@@ -40,7 +40,7 @@ GHSL llega a 2020. Para los años siguientes se usa Dynamic World (10 m), que mi
 
 | | 2020 | 2026 | Cambio |
 |---|---:|---:|---:|
-| Construido (Dynamic World) | 5,967 ha | 6,194 ha | +3.8% |
+| Construido (Dynamic World) | 5,573 ha | 5,786 ha | +3.8% |
 
 En el mapa, el rojo marca lo que pasó a construido entre 2019–2020 y 2025–2026 fuera de la mancha GHSL 2020.
 
@@ -50,25 +50,25 @@ En el mapa, el rojo marca lo que pasó a construido entre 2019–2020 y 2025–2
 
 | Cambio 2016–2017 → 2025–2026 | ha |
 |---|---:|
-| Cultivo que se mantiene | 6,518 |
-| Cultivo nuevo | 1,035 |
-| Cultivo perdido: ahora construido | 237 |
-| Cultivo perdido: otro uso | 1,147 |
-| **Cultivos 2016–2017 → 2025–2026** | **7,902 → 7,553 (−4.4%)** |
+| Cultivo que se mantiene | 6,085 |
+| Cultivo nuevo | 965 |
+| Cultivo perdido: ahora construido | 222 |
+| Cultivo perdido: otro uso | 1,072 |
+| **Cultivos 2016–2017 → 2025–2026** | **7,379 → 7,050 (−4.5%)** |
 
 | Año | Cultivos (ha) | Construido (ha) |
 |---|---:|---:|
-| 2016 | 6,901 | 5,772 |
-| 2017 | 8,563 | 6,154 |
-| 2018 | 9,669 | 5,733 |
-| 2019 | 9,343 | 5,985 |
-| 2020 | 9,640 | 5,967 |
-| 2021 | 9,899 | 6,377 |
-| 2022 | 9,516 | 6,325 |
-| 2023 | 10,061 | 6,135 |
-| 2024 | 9,880 | 6,273 |
-| 2025 | 7,681 | 6,266 |
-| 2026 | 7,380 | 6,194 |
+| 2016 | 6,446 | 5,391 |
+| 2017 | 7,998 | 5,749 |
+| 2018 | 9,028 | 5,354 |
+| 2019 | 8,723 | 5,589 |
+| 2020 | 9,002 | 5,573 |
+| 2021 | 9,244 | 5,956 |
+| 2022 | 8,886 | 5,907 |
+| 2023 | 9,392 | 5,730 |
+| 2024 | 9,224 | 5,860 |
+| 2025 | 7,171 | 5,853 |
+| 2026 | 6,887 | 5,786 |
 
 - La superficie de cultivo sube y baja con la lluvia: en años secos las parcelas de temporal no se siembran y aparecen como pastizal o suelo desnudo.
 - Dynamic World subestima la agricultura: INEGI (2010) reporta 52.9% del municipio como agrícola (~17,800 ha). La tendencia es más confiable que el valor absoluto.
@@ -81,22 +81,22 @@ La biodiversidad no se mide directamente por satélite; se usa la pérdida de h�
 
 | Cambio 2016–2017 → 2025–2026 | ha |
 |---|---:|
-| Vegetación natural que se mantiene | 19,108 |
-| Perdida: ahora cultivo | 829 |
-| Perdida: ahora construido | 362 |
-| Perdida: ahora suelo desnudo o agua | 172 |
-| Recuperada (antes cultivo u otro) | 1,792 |
-| **Vegetación natural 2016–2017 → 2025–2026** | **20,471 → 20,901 (+2.1%)** |
+| Vegetación natural que se mantiene | 17,843 |
+| Perdida: ahora cultivo | 774 |
+| Perdida: ahora construido | 337 |
+| Perdida: ahora suelo desnudo o agua | 160 |
+| Recuperada (antes cultivo u otro) | 1,675 |
+| **Vegetación natural 2016–2017 → 2025–2026** | **19,114 → 19,518 (+2.1%)** |
 
-- Se perdieron 1,362 ha de vegetación natural; 362 ha pasaron a zona construida, de forma permanente.
+- Se perdieron 1,271 ha de vegetación natural; 337 ha pasaron a zona construida, de forma permanente.
 - La "recuperación" es sobre todo parcelas de temporal que no se sembraron, no regeneración de matorral.
-- Pérdida de cobertura arbórea (Hansen, 2001–2025): 61 ha en total; el municipio tiene poca cobertura arbórea densa.
+- Pérdida de cobertura arbórea (Hansen, 2001–2025): 56 ha en total; el municipio tiene poca cobertura arbórea densa.
 
 ## Método
 
 - Superficie construida: GHSL `JRC/GHSL/P2023A/GHS_BUILT_S`, celdas de 100 m, épocas 2000–2020.
 - Mancha urbana: área de las celdas con ≥ 20% de superficie construida.
-- Cobertura 2016–2026: Dynamic World `GOOGLE/DYNAMICWORLD/V1`, clase más frecuente de cada año (10 m). Los mapas comparan 2016–2017 con 2025–2026 para reducir el efecto de un solo año. 2026 hasta octubre.
+- Cobertura 2016–2026: Dynamic World `GOOGLE/DYNAMICWORLD/V1`, clase más frecuente de cada año (10 m), áreas calculadas en UTM 14N. Los mapas comparan 2016–2017 con 2025–2026 para reducir el efecto de un solo año. 2026 hasta octubre.
 - Pérdida arbórea: Hansen `UMD/hansen/global_forest_change_2025_v1_13`, banda `lossyear`.
 - Áreas protegidas: WDPA. Cerro Magoni: `datos/magoni.geojson`. Relieve: NASADEM.
 - Límite: `FAO/GAUL/2025/level2`, Tula De Allende (337 km²; INEGI reporta ~305 km²). Con GAUL 2015 (491 km²) el crecimiento de la mancha es +31.7%.

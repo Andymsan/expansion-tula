@@ -1,6 +1,6 @@
 import sys, os
 import ee
-from comun import municipio, dw, dw_areas, base, dibujar, leyenda_base, guardar, descargar, leer, pct, INICIO, FIN, NATURAL
+from comun import CRS, municipio, dw, dw_areas, base, dibujar, leyenda_base, guardar, descargar, leer, pct, INICIO, FIN, NATURAL
 
 AÑOS = range(2016, 2027)
 HANSEN = "UMD/hansen/global_forest_change_2025_v1_13"
@@ -29,7 +29,7 @@ def main(magoni, out, proyecto):
     t[["año"] + [c for c in nat if c in t] + ["natural"]].round(1).to_csv(f"{out}/vegetacion_natural_dw.csv", index=False)
 
     perdida = ee.Image(HANSEN).select("lossyear")
-    h = perdida.selfMask().reduceRegion(ee.Reducer.frequencyHistogram(), geom, 30, maxPixels=1e10).getInfo()["lossyear"]
+    h = perdida.selfMask().reduceRegion(ee.Reducer.frequencyHistogram(), geom, 30, crs=CRS, maxPixels=1e10).getInfo()["lossyear"]
     hs = pd.DataFrame({"año": [2000 + int(k) for k in h], "perdida_arboles_ha": [v * 0.09 for v in h.values()]})
     hs = hs.set_index("año").reindex(range(2001, 2026), fill_value=0).reset_index().round(1)
     hs.to_csv(f"{out}/perdida_arboles_hansen.csv", index=False)
@@ -39,7 +39,7 @@ def main(magoni, out, proyecto):
     cambio = (ee.Image(0).where(n0.And(n1), 1).where(n0.And(b.eq(CULTIVOS)), 2).where(n0.And(b.eq(CONSTRUIDO)), 3)
               .where(n0.And(n1.Not()).And(b.neq(CULTIVOS)).And(b.neq(CONSTRUIDO)), 4).where(n0.Not().And(n1), 5)
               .selfMask().toByte().rename("c").clip(geom))
-    h = cambio.reduceRegion(ee.Reducer.frequencyHistogram(), geom, 10, maxPixels=1e10).getInfo()["c"]
+    h = cambio.reduceRegion(ee.Reducer.frequencyHistogram(), geom, 10, crs=CRS, maxPixels=1e10).getInfo()["c"]
     ha = {CLASES[int(k)][0]: v * 0.01 for k, v in h.items()}
     pd.Series(ha, name="ha").round(1).rename_axis("cambio").to_csv(f"{out}/vegetacion_natural_cambio.csv")
 

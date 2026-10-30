@@ -68,7 +68,7 @@ def main(magoni, out, proyecto):
     descargar(nuevo, b["region"], 20, f"{out}/_dw.tif")
     (zg, eg), (zd, ed) = leer(f"{out}/_ghsl.tif"), leer(f"{out}/_dw.tif")
 
-    col = {"2000": "#8c8c8c", "2020": "#f28e2b", "2026": "#c0392b"}
+    col = {"2000": "#4a4a4a", "2020": "#f28e2b", "2026": "#c0392b"}
     fig, ax = plt.subplots(figsize=(9, 10.5))
     dibujar(ax, b, "Tula de Allende: crecimiento de la mancha urbana",
             f"Mancha {AÑOS[0]}–{AÑOS[-1]}: {cambio(f'mancha_{UMBRAL:.0%}'):+.0f}% (GHSL) · población {pct(*POBLACION):+.0f}% (INEGI)")
