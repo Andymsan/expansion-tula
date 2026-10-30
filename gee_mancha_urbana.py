@@ -68,7 +68,7 @@ def main(magoni, out, proyecto):
     descargar(nuevo, b["region"], 20, f"{out}/_dw.tif")
     (zg, eg), (zd, ed) = leer(f"{out}/_ghsl.tif"), leer(f"{out}/_dw.tif")
 
-    col = {"2000": "#4a4a4a", "2020": "#f28e2b", "2026": "#c0392b"}
+    col = {"2000": "#7a0026", "2020": "#e8452c", "2026": "#fdb32f"}  # degradado: más oscuro = más antiguo
     fig, ax = plt.subplots(figsize=(9, 10.5))
     dibujar(ax, b, "Tula de Allende: crecimiento de la mancha urbana",
             f"Mancha {AÑOS[0]}–{AÑOS[-1]}: {cambio(f'mancha_{UMBRAL:.0%}'):+.0f}% (GHSL) · población {pct(*POBLACION):+.0f}% (INEGI)")
@@ -79,7 +79,7 @@ def main(magoni, out, proyecto):
                        Patch(color=col["2020"], label=f"Crecimiento {AÑOS[0]}–{AÑOS[-1]}"),
                        Patch(color=col["2026"], label=f"Construido nuevo {DW_RECIENTE[0]}–{DW_RECIENTE[1]}*")] + leyenda_base(),
               loc="lower left", fontsize=8.5, frameon=True, framealpha=0.95, edgecolor="none")
-    guardar(fig, ax, f"{out}/mancha_urbana_2000_2026.png",
+    guardar(fig, ax, f"{out}/mancha_urbana_degradado.png",
             f"Mancha urbana: GHSL (JRC), celdas de 100 m con ≥ {UMBRAL:.0%} construido. "
             f"*{DW_RECIENTE[0]}–{DW_RECIENTE[1]}: Dynamic World (10 m), indicativo.\n"
             "Límite: FAO GAUL 2025. Áreas protegidas: WDPA. Relieve: NASADEM.")

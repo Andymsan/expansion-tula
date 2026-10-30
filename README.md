@@ -4,7 +4,7 @@ Entre 2000 y 2020, la población del municipio creció 33% (INEGI) y su mancha u
 
 ## Mancha urbana
 
-![Mancha urbana 2000–2026](resultados/mancha_urbana_2000_2026.png)
+![Mancha urbana 2000–2026](resultados/mancha_urbana_degradado.png)
 
 ## Crecimiento 2000–2020
 
